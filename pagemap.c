@@ -144,16 +144,17 @@ static int kpagecgroup(void)
 	return kpagecgroup_fd >= 0;
 }
 
+static void print_empty(unsigned long addr)
+{
+	fprintf(stdout, "  %0*lx -\n", 2 * (int)sizeof(unsigned long), addr);
+}
+
 static void print_line(unsigned long addr, uint64_t pm, uint64_t kpc, uint64_t kpf, uint64_t kpcg)
 {
-	if (!empty_pm(pm)) {
-		if (kpagecgroup())
-			fprintf(stdout, "  %0*lx pm %016" PRIx64 " pc %016" PRIx64 " pf %016" PRIx64 " cg %016" PRIx64 "\n", 2 * (int)sizeof(unsigned long), addr, pm, kpc, kpf, kpcg);
-		else
-			fprintf(stdout, "  %0*lx pm %016" PRIx64 " pc %016" PRIx64 " pf %016" PRIx64 "\n", 2 * (int)sizeof(unsigned long), addr, pm, kpc, kpf);
-	} else if (!hide_empty) {
-		fprintf(stdout, "  %0*lx -\n", 2 * (int)sizeof(unsigned long), addr);
-	}
+	if (kpagecgroup())
+		fprintf(stdout, "  %0*lx pm %016" PRIx64 " pc %016" PRIx64 " pf %016" PRIx64 " cg %016" PRIx64 "\n", 2 * (int)sizeof(unsigned long), addr, pm, kpc, kpf, kpcg);
+	else
+		fprintf(stdout, "  %0*lx pm %016" PRIx64 " pc %016" PRIx64 " pf %016" PRIx64 "\n", 2 * (int)sizeof(unsigned long), addr, pm, kpc, kpf);
 }
 
 static void print_u64_bit(uint64_t kpf, uint64_t bit, const char *desc)
@@ -240,13 +241,6 @@ static void print_kpf(uint64_t kpf)
 
 static void print_full(unsigned long vma_start, unsigned long addr, uint64_t pm, uint64_t kpc, uint64_t kpf, uint64_t kpcg)
 {
-	if (empty_pm(pm)) {
-		if (!hide_empty)
-			fprintf(stdout, "  %0*lx -\n", 2 * (int)sizeof(unsigned long), addr);
-
-		return;
-	}
-
 	if (kpagecgroup())
 		fprintf(stdout, "  %0*lx pm %016" PRIx64 " pc %016" PRIx64 " pf %016" PRIx64 " cg %016" PRIx64 "\n", 2 * (int)sizeof(unsigned long), addr, pm, kpc, kpf, kpcg);
 	else
@@ -301,6 +295,13 @@ static void do_pm(unsigned long vma_start, unsigned long addr, uint64_t pm)
 	uint64_t kpc = 0;
 	uint64_t kpf = 0;
 	uint64_t kpcg = 0;
+
+	if (empty_pm(pm)) {
+		if (!hide_empty)
+			print_empty(addr);
+
+		return;
+	}
 
 	if (pm & BIT(PM_PAGE_PRESENT)) {
 		uint64_t pfn = pm & PM_PAGE_FRAME_NUMBER_MASK;
