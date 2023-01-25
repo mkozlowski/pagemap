@@ -283,21 +283,13 @@ static void print_full(unsigned long vma_start, unsigned long addr, uint64_t pm,
 static int read_u64_at_idx(int fd, uint64_t idx, uint64_t *val)
 {
 	int ret;
-	uint64_t off;
 
 	if (fd < 0)
 		return 1;
 
-	off = idx * sizeof(uint64_t);
-	off = lseek(fd, off, SEEK_SET);
-	if (off != idx * sizeof(uint64_t)) {
-		fprintf(stderr, "lseek() off %lu: %m\n", (unsigned long)off);
-		return 1;
-	}
-
-	ret = read(fd, val, sizeof(uint64_t));
+	ret = pread(fd, val, sizeof(uint64_t), idx * sizeof(uint64_t));
 	if (ret != sizeof(uint64_t)) {
-		fprintf(stderr, "read() failed: %m\n");
+		fprintf(stderr, "pread() failed: %m\n");
 		return 1;
 	}
 
